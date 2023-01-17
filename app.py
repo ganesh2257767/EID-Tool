@@ -68,7 +68,7 @@ def format_for_table(lst: List) -> List:
 
     for i in range(0, len(lst), 6):
         temp.append(lst[i:i+6])
-    
+
     return temp
 
 
@@ -98,7 +98,7 @@ def get_master_matrix() -> None:
         elif "Usecols do not match columns, columns expected but not found" in e.args[0]:
             error_column_name = str(e)[str(e).index("'"):].replace(']', '')
             handle_error_popups(f"Column(s) {error_column_name} not found.")
-        
+
     else:
         upload_master_indicator.configure(text=f"File {master_matrix_path.split('/')[-1]} uploaded", text_color="green")
         frame2.pack(padx=10, pady=10, fill="both")
@@ -118,7 +118,7 @@ def get_corp_ftax_from_offer_id(env: str, offer_id: str) -> None:
     if not all((env, offer_id)):
         handle_error_popups("Won't work if there's missing values!")
         return
-        
+
     match env:
         case "QA INT":
             corp = ['7702', '7704', '7710', '7715']
@@ -134,7 +134,7 @@ def get_corp_ftax_from_offer_id(env: str, offer_id: str) -> None:
     corpftax_altice_list = []
     corpftax_legacy_list = []
     smb_list = []
-    
+
     offer_eid = {eid_dataframe['ELIGIBILITY_ID'][i] for i in eid_dataframe.index if eid_dataframe['OFFER_ID'][i] == offer_id}
     for j in master_matrix_dataframe.index:
         if master_matrix_dataframe['Corp'][j] in corp:
@@ -154,14 +154,13 @@ def get_corp_ftax_from_offer_id(env: str, offer_id: str) -> None:
         result_altice = format_for_table(corpftax_altice_list)
         result_legacy = format_for_table(corpftax_legacy_list)
         display_result_table(result_altice, f"Altice Combinations for Offer {offer_id}", result_legacy, f"Legacy Combinations for Offer {offer_id}")
-        
+
     elif smb_list:
         result_smb = format_for_table(smb_list)
         display_result_table(result_smb, 'SMB Combinations')
 
     else:
         handle_error_popups(f'Offer {offer_id} not available in {corp} or is invalid!\n\nPlease check Offer ID or change corp and try again!')
-        
 
 
 
@@ -172,7 +171,7 @@ def get_eid_sheet() -> None:
 
     Uploads the EID file supplied and creates a Pandas DataFrame, also throws exceptions if the file format is not excel (.xlsx)
     """
-       
+
     global upload_eid_indicator, frame2, eid_dataframe
 
     eid_path = filedialog.askopenfilename()
@@ -209,7 +208,7 @@ def from_eid(eid: str) -> None:
     if not eid:
         handle_error_popups('You need to pass in a EID value for this to work!')
         return
-    
+
     corp_ftax = []
     for i in master_matrix_dataframe.index:
         if master_matrix_dataframe['RESI EID'][i] == eid:
@@ -222,7 +221,6 @@ def from_eid(eid: str) -> None:
         display_result_table(result, f"Corp-Ftax - Market combinations for {eid}")
     else:
         handle_error_popups(f'{eid} not available or invalid, please check and try again!')
-        
 
 
 def display_result_table(result1: List, heading1: str, result2: List=None, heading2: str=None):
@@ -243,7 +241,7 @@ def display_result_table(result1: List, heading1: str, result2: List=None, headi
     result_popup = CTkToplevel(root)
     result_popup.title("Query result")
     result_popup.geometry("{}+{}".format(x_cordinate-350, y_cordinate-150))
-    
+
     if result1:
         result_popup.grab_set()
         rows = len(result1)
@@ -258,7 +256,7 @@ def display_result_table(result1: List, heading1: str, result2: List=None, headi
         label.grid(row=0, columnspan=6, padx=10, pady=10)
         
         button_row_start = len(result1)
-        
+
         for i in range(rows):
             for j in range(columns):
                 e = CTkEntry(result_frame1, width=180, corner_radius=0, justify=CENTER)
@@ -269,7 +267,7 @@ def display_result_table(result1: List, heading1: str, result2: List=None, headi
                 except IndexError:
                     e.grid_forget()
                     break
-    
+
     if result2:
         rows = len(result2)
         try:
@@ -278,11 +276,11 @@ def display_result_table(result1: List, heading1: str, result2: List=None, headi
             columns = 1
         result_frame2 = CTkFrame(result_popup)
         result_frame2.grid(row=1, column=0, padx=20, pady=20, columnspan=6)
-        
+
         label = CTkLabel(result_frame2, text=heading2, font=('Segoe UI', 18, 'bold'))
         label.grid(row=0, columnspan=6, padx=10, pady=10)
         button_row_start = len(result2) + len(result1) + 1
-        
+
         for i in range(rows):
             for j in range(columns):
                 e = CTkEntry(result_frame2, width=180, corner_radius=0, justify=CENTER)
@@ -293,8 +291,8 @@ def display_result_table(result1: List, heading1: str, result2: List=None, headi
                 except IndexError:
                     e.grid_forget()
                     break
-        
-            
+
+
     button = CTkButton(result_popup, text="Close", fg_color="red", hover_color="#d9453b", command=lambda: result_popup.destroy())
     button.grid(row=button_row_start, columnspan=6, padx=10, pady=10)
     result_popup.bind('<Return>', lambda x: result_popup.destroy())
@@ -304,11 +302,10 @@ def display_result_table(result1: List, heading1: str, result2: List=None, headi
 
 
 def get_radio_value() -> None:
-    
     """
      Switches the window based on the radio button selected.
     """
-    
+
     val = radio_selection.get()
     if val == 1:
         frame3.grid(row=1, column=0, padx=10, pady=10, columnspan=2, sticky=N+S+W+E)
@@ -317,14 +314,13 @@ def get_radio_value() -> None:
     else:
         frame4.grid(row=1, column=0, padx=10, pady=10, columnspan=2, sticky=E+W)
         frame3.grid_forget()
-        
+
 
 def change_theme() -> None:
-    
     """
         Switches between light and dark themes.
     """
-    
+
     global default_theme
     if default_theme == 0:
         default_theme = 1
@@ -332,7 +328,6 @@ def change_theme() -> None:
     else:
         default_theme = 0
         set_appearance_mode("dark")
-
 
 
 # Frame 1 (Button to upload and display uploaded Master Matrix)
