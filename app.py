@@ -1,20 +1,19 @@
 from customtkinter import *
-from tkinter import filedialog, PhotoImage
+from tkinter import filedialog
 import pandas as pd
+from PIL import Image
 
 default_theme = 0
-default_color = 0
 
+set_appearance_mode("dark")
 set_default_color_theme("dark-blue")
 
 root = CTk()
 root.resizable(False, False)
-root.title("EID Tool v1.0")
+root.title("EID Tool v1.1")
 
 
-dark_img = PhotoImage(file=".\\assets\\dark_mode.png")
-light_img = PhotoImage(file=".\\assets\\light_mode.png")
-
+dark_img = CTkImage(light_image=Image.open(".\\assets\\dark_mode.png"), dark_image=Image.open(".\\assets\\light_mode.png"), size=(10, 10))
 
 window_height = 500
 popup_height = 100
@@ -44,8 +43,12 @@ def handle_error_popups(err_message: str) -> None:
     popup.grab_set()
     label = CTkLabel(popup, text=err_message, padx=10, pady=10)
     label.pack(expand=True)
-    button = CTkButton(popup, text="Dismiss", fg_color="red", hover_color="#d9453b", padx=10, pady=10, command=lambda: popup.destroy())
-    button.pack()
+    button = CTkButton(popup, text="Dismiss", fg_color="red", hover_color="#d9453b", command=lambda: popup.destroy())
+    button.pack(padx=10, pady=10)
+    popup.bind('<Return>', lambda x: popup.destroy())
+    popup.bind('<Escape>', lambda x: popup.destroy())
+    popup.bind('<Key-space>', lambda x: popup.destroy())
+    
     popup.wm_transient(root)
 
 
@@ -128,7 +131,7 @@ def get_corp_ftax(env, offer_id):
         if corpftax_legacy_list or corpftax_altice_list:
             result_altice = format_for_table(corpftax_altice_list)
             result_legacy = format_for_table(corpftax_legacy_list)
-            display_result_table(result_altice, "Altice Combinations", result_legacy, "Legacy Combinations")
+            display_result_table(result_altice, f"Altice Combinations for Offer {offer_id}", result_legacy, f"Legacy Combinations for Offer {offer_id}")
            
         elif smb_list:
             result_smb = format_for_table(smb_list)
@@ -169,9 +172,10 @@ def get_eid_sheet() -> None:
     else:
         upload_eid_indicator.configure(text=f"File {eid_path.split('/')[-1]} uploaded", text_color="green")
         frame5.pack(padx=10, pady=10, fill="both")
+        oid_input.focus_set()
 
 
-def from_eid(eid):
+def from_eid(eid, event=None):
     if eid:
         corp_ftax = []
         for i in master_matrix_dataframe.index:
@@ -201,17 +205,17 @@ def display_result_table(result1, heading1, result2=None, heading2=None):
             columns = len(result1[0])
         except IndexError:
             columns = 1
-        frame1 = CTkFrame(result_popup)
-        frame1.grid(row=0, column=0, padx=20, pady=20, columnspan=4)
+        result_frame1 = CTkFrame(result_popup)
+        result_frame1.grid(row=0, column=0, padx=20, pady=20, columnspan=4)
         
-        label = CTkLabel(frame1, text=heading1)
+        label = CTkLabel(result_frame1, text=heading1, font=('Segoe UI', 18, 'bold'))
         label.grid(row=0, columnspan=6, padx=10, pady=10)
         
         button_row_start = len(result1)
         
         for i in range(rows):
             for j in range(columns):
-                e = CTkEntry(frame1, width=180, corner_radius=0, justify=CENTER)
+                e = CTkEntry(result_frame1, width=180, corner_radius=0, justify=CENTER)
                 try:
                     e.grid(row=i+1, column=j, padx=10, pady=10)
                     e.insert(END, result1[i][j])
@@ -226,16 +230,16 @@ def display_result_table(result1, heading1, result2=None, heading2=None):
             columns = len(result2[0])
         except IndexError:
             columns = 1
-        frame2 = CTkFrame(result_popup)
-        frame2.grid(row=1, column=0, padx=20, pady=20, columnspan=6)
+        result_frame2 = CTkFrame(result_popup)
+        result_frame2.grid(row=1, column=0, padx=20, pady=20, columnspan=6)
         
-        label = CTkLabel(frame2, text=heading2)
+        label = CTkLabel(result_frame2, text=heading2, font=('Segoe UI', 18, 'bold'))
         label.grid(row=0, columnspan=6, padx=10, pady=10)
         button_row_start = len(result2) + len(result1) + 1
         
         for i in range(rows):
             for j in range(columns):
-                e = CTkEntry(frame2, width=180, corner_radius=0, justify=CENTER)
+                e = CTkEntry(result_frame2, width=180, corner_radius=0, justify=CENTER)
                 try:
                     e.grid(row=i+1, column=j, padx=10, pady=10)
                     e.insert(END, result2[i][j])
@@ -245,8 +249,11 @@ def display_result_table(result1, heading1, result2=None, heading2=None):
                     break
         
             
-    button = CTkButton(result_popup, text="Close", fg_color="red", hover_color="#d9453b", padx=10, pady=10, command=lambda: result_popup.destroy())
-    button.grid(row=button_row_start, columnspan=6)
+    button = CTkButton(result_popup, text="Close", fg_color="red", hover_color="#d9453b", command=lambda: result_popup.destroy())
+    button.grid(row=button_row_start, columnspan=6, padx=10, pady=10)
+    result_popup.bind('<Return>', lambda x: result_popup.destroy())
+    result_popup.bind('<Escape>', lambda x: result_popup.destroy())
+    result_popup.bind('<Key-space>', lambda x: result_popup.destroy())
     result_popup.wm_transient(root)
 
 
@@ -259,6 +266,7 @@ def get_radio_value() -> None:
     val = radio_selection.get()
     if val == 1:
         frame3.grid(row=1, column=0, padx=10, pady=10, columnspan=2, sticky=N+S+W+E)
+        eid_input.focus()
         frame4.grid_forget()
     else:
         frame4.grid(row=1, column=0, padx=10, pady=10, columnspan=2, sticky=E+W)
@@ -274,11 +282,11 @@ def change_theme() -> None:
     global default_theme
     if default_theme == 0:
         default_theme = 1
-        light_dark_button.configure(image=dark_img)
+        # light_dark_button.configure(image=dark_img)
         set_appearance_mode("light")
     else:
         default_theme = 0
-        light_dark_button.configure(image=light_img)
+        # light_dark_button.configure(image=light_img)
         set_appearance_mode("dark")
 
 
@@ -295,7 +303,7 @@ upload_matrix_button.pack(pady=(20, 5))
 upload_master_indicator = CTkLabel(frame1, text="No file uploaded", text_color="red")
 upload_master_indicator.pack(pady=(5, 10))
 
-# Frame 2 (Radio buttons to select the search criteria, either with EID or Offer ID)
+# Frame 2 (Radio buttons to select the search criteria, either with EID or Offer ID) 1630941  
 frame2 = CTkFrame(root)
 
 # Frame 2 widgets
@@ -321,13 +329,17 @@ eid_var = StringVar()
 eid_label = CTkLabel(frame3, text="Enter EID")
 eid_label.pack(padx=10, pady=(10, 1))
 
-eid_input = CTkEntry(frame3, width=200, textvariable=eid_var)
+eid_input = CTkEntry(frame3, width=200, textvariable=eid_var, takefocus=True)
 eid_input.pack(padx=10, pady=(1, 5))
+eid_input.focus_set()
 
-eid_var.trace('w', lambda *args: eid_var.set(eid_var.get().upper()))
+eid_var.trace('w', lambda *args: eid_var.set(eid_var.get().upper().strip()))
 
 eid_submit = CTkButton(frame3, text="Submit", width=75, command=lambda:from_eid(eid_var.get()))
 eid_submit.pack(padx=10, pady=(5, 10))
+
+eid_input.bind('<Return>', lambda x:from_eid(eid_var.get()))
+eid_input.bind('<Key-space>', lambda x:from_eid(eid_var.get()))
 
 # Frame 4 (Button to upload EID sheet and display uploaded sheet)
 frame4 = CTkFrame(frame2)
@@ -355,6 +367,8 @@ oid_var = StringVar()
 oid_input = CTkEntry(frame5, textvariable=oid_var)
 oid_input.grid(row=1, column=0, padx=(20, 10), pady=(5, 5))
 
+oid_var.trace('w', lambda *args: oid_var.set(oid_var.get().strip()))
+
 env_label = CTkLabel(frame5, text="Select Env.")
 env_label.grid(row=0, column=1, padx=10, pady=(5, 5))
 
@@ -365,15 +379,18 @@ env_drop.grid(row=1, column=1, padx=10, pady=(5, 5))
 oid_submit = CTkButton(frame5, text="Submit", width=75, command=lambda: get_corp_ftax(env_var.get(), oid_var.get()))
 oid_submit.grid(row=2, column=0, columnspan=2, padx=(20, 10), pady=(5, 10), sticky=E+W)
 
+oid_input.bind('<Return>', lambda x: get_corp_ftax(env_var.get(), oid_var.get()))
+oid_input.bind('<Key-space>', lambda x: get_corp_ftax(env_var.get(), oid_var.get()))
+
 # Frame 6 (Footer section with Tool version and theme change mechanism)
 frame6 = CTkFrame(root, height=50)
 frame6.pack(side=BOTTOM, padx=10, pady=(0, 10), fill=X)
 
 # Frame 6 widgets
-version_label = CTkLabel(frame6, text="EID Tool v1.0", width=20)
+version_label = CTkLabel(frame6, text="EID Tool v1.1", width=20)
 version_label.pack(side=LEFT, padx=5, pady=5)
 
-light_dark_button = CTkButton(frame6, image=light_img, relief="flat", text="", width=16, height=16, fg_color="white", command=change_theme)
+light_dark_button = CTkButton(frame6, image=dark_img, text="", width=16, height=16, fg_color="white", command=change_theme)
 light_dark_button.pack(side=RIGHT, padx=(0, 20), pady=5)
 
 theme_label = CTkLabel(frame6, text="Change theme", width=25)
