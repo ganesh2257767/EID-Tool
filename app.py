@@ -1,0 +1,383 @@
+from customtkinter import *
+from tkinter import filedialog, PhotoImage
+import pandas as pd
+
+default_theme = 0
+default_color = 0
+
+set_default_color_theme("dark-blue")
+
+root = CTk()
+root.resizable(False, False)
+root.title("EID Tool v1.0")
+
+
+dark_img = PhotoImage(file=".\\assets\\dark_mode.png")
+light_img = PhotoImage(file=".\\assets\\light_mode.png")
+
+
+window_height = 500
+popup_height = 100
+window_width, popup_width = 400, 500
+
+
+screen_width = root.winfo_screenwidth()
+screen_height = root.winfo_screenheight()
+
+x_cordinate = int((screen_width/2) - (window_width/2))
+y_cordinate = int((screen_height/2) - (window_height/2))
+
+root.geometry("{}x{}+{}+{}".format(window_width, window_height, x_cordinate, y_cordinate))
+
+
+def handle_error_popups(err_message: str) -> None:
+    """
+        Handles all exceptions with a popup and an appropriate error message.
+        
+        Parameters:
+            err_message: str -> Takes in a string error message to display on the popup window.
+    """
+    popup = CTkToplevel(root)
+    popup.title("Error")
+    popup.geometry("{}x{}+{}+{}".format(popup_width, popup_height, x_cordinate-50, y_cordinate+100))
+    popup.geometry("500x150")
+    popup.grab_set()
+    label = CTkLabel(popup, text=err_message, padx=10, pady=10)
+    label.pack(expand=True)
+    button = CTkButton(popup, text="Dismiss", fg_color="red", hover_color="#d9453b", padx=10, pady=10, command=lambda: popup.destroy())
+    button.pack()
+    popup.wm_transient(root)
+
+
+
+def format_for_table(lst):
+    temp = []
+
+    for i in range(0, len(lst), 6):
+        temp.append(lst[i:i+6])
+    
+    return temp
+
+
+master_matrix_dataframe = None
+def get_master_matrix() -> None:
+    
+    """
+        Uploads the Master Matrix file supplied and creates a Pandas DataFrame, also throws exceptions if the file format is not excel (.xlsx)
+    """
+    global upload_master_indicator, frame2, master_matrix_dataframe
+
+    master_matrix_path = filedialog.askopenfilename()
+    read_cols = ['Corp', 'CONCATENATE', 'RESI EID', 'Market', 'Altice One']
+    try:
+        master_matrix_dataframe = pd.read_excel(master_matrix_path, usecols=read_cols, converters={'Corp':str, 'CONCATENATE': str})
+    except ImportError as e:
+        frame2.pack_forget()
+        handle_error_popups(e)
+    except FileNotFoundError:
+        pass
+    except ValueError as e:
+        frame2.pack_forget()
+        upload_master_indicator.configure(text=f"No file uploaded", text_color="red")
+        if "Excel file format cannot be determined, you must specify an engine manually" in e.args[0]:
+            handle_error_popups("Please upload an excel file only!")
+        elif "Usecols do not match columns, columns expected but not found" in e.args[0]:
+            error_column_name = str(e)[str(e).index("'"):].replace(']', '')
+            handle_error_popups(f"Column(s) {error_column_name} not found.")
+        
+    else:
+        upload_master_indicator.configure(text=f"File {master_matrix_path.split('/')[-1]} uploaded", text_color="green")
+        frame2.pack(padx=10, pady=10, fill="both")
+
+
+def get_corp_ftax(env, offer_id):
+    if all((env, offer_id)):
+        
+        match env:
+            case "QA INT":
+                corp = ['7702', '7704', '7710', '7715']
+            case "QA 1":
+                corp = ['7708', '7711']
+            case "QA 2":
+                corp = ['7712', '7709']
+            case "QA 3":
+                corp = ['7707', '7714']
+            case _:
+                corp = ['7701', '7703', '7705', '7706', '7713']
+    
+        corpftax_altice_list = []
+        corpftax_legacy_list = []
+        smb_list = []
+        
+        offer_eid = {eid_dataframe['ELIGIBILITY_ID'][i] for i in eid_dataframe.index if eid_dataframe['OFFER_ID'][i] == offer_id}
+        print(offer_eid)
+        for j in master_matrix_dataframe.index:
+            if master_matrix_dataframe['Corp'][j] in corp:
+                if master_matrix_dataframe['Altice One'][j] == 'Y' and master_matrix_dataframe['RESI EID'][j] in offer_eid:
+                    corpftax_altice_list.append(
+                        f"{master_matrix_dataframe['CONCATENATE'][j][:4]}-{master_matrix_dataframe['CONCATENATE'][j][4:]} - {master_matrix_dataframe['Market'][j].strip()} - {master_matrix_dataframe['RESI EID'][j].strip()}")
+
+                elif master_matrix_dataframe['Altice One'][j] == 'N' and master_matrix_dataframe['RESI EID'][j] in offer_eid:
+                    corpftax_legacy_list.append(
+                        f"{master_matrix_dataframe['CONCATENATE'][j][:4]}-{master_matrix_dataframe['CONCATENATE'][j][4:]} - {master_matrix_dataframe['Market'][j].strip()} - {master_matrix_dataframe['RESI EID'][j].strip()}")
+
+                elif master_matrix_dataframe['RESI EID'][j] in offer_eid:
+                    smb_list.append(f"{master_matrix_dataframe['CONCATENATE'][j][:4]}-{master_matrix_dataframe['CONCATENATE'][j][4:]} - {master_matrix_dataframe['Market'][j].strip()} - {master_matrix_dataframe['RESI EID'][j].strip()}")
+
+
+        if corpftax_legacy_list or corpftax_altice_list:
+            result_altice = format_for_table(corpftax_altice_list)
+            result_legacy = format_for_table(corpftax_legacy_list)
+            display_result_table(result_altice, "Altice Combinations", result_legacy, "Legacy Combinations")
+           
+        elif smb_list:
+            result_smb = format_for_table(smb_list)
+            display_result_table(result_smb, 'SMB Combinations')
+
+        else:
+            handle_error_popups(f'Offer {offer_id} not available in {corp} or is invalid!\n\nPlease check Offer ID or change corp and try again!')
+    else:
+        handle_error_popups("Won't work if there's missing values!")
+
+
+
+eid_dataframe = None
+def get_eid_sheet() -> None:
+    
+    """
+        Uploads the EID file supplied and creates a Pandas DataFrame, also throws exceptions if the file format is not excel (.xlsx)
+    """
+    
+    global upload_eid_indicator, frame2, eid_dataframe
+
+    eid_path = filedialog.askopenfilename()
+    try:
+        eid_dataframe = pd.read_excel(eid_path, usecols=['ELIGIBILITY_ID', 'OFFER_ID'], converters={'ELIGIBILITY_ID': str, 'OFFER_ID': str})
+    except ImportError as e:
+        frame5.grid_forget()
+        handle_error_popups(e)
+    except FileNotFoundError:
+        pass
+    except ValueError as e:
+        frame5.grid_forget()
+        upload_eid_indicator.configure(text=f"No file uploaded", text_color="red")
+        if "Excel file format cannot be determined, you must specify an engine manually" in e.args[0]:
+            handle_error_popups("Please upload an excel file only!")
+        elif "Usecols do not match columns, columns expected but not found" in e.args[0]:
+            error_column_name = str(e)[str(e).index("'"):].replace(']', '')
+            handle_error_popups(f"Column(s) {error_column_name} not found.")
+    else:
+        upload_eid_indicator.configure(text=f"File {eid_path.split('/')[-1]} uploaded", text_color="green")
+        frame5.pack(padx=10, pady=10, fill="both")
+
+
+def from_eid(eid):
+    if eid:
+        corp_ftax = []
+        for i in master_matrix_dataframe.index:
+            if master_matrix_dataframe['RESI EID'][i] == eid:
+                a = f"""{master_matrix_dataframe['CONCATENATE'][i][:4]}-{master_matrix_dataframe['CONCATENATE'][i][4:]} - {master_matrix_dataframe['Market'][i].strip()}"""
+                corp_ftax.append(a)
+
+        if corp_ftax:
+            result = format_for_table(corp_ftax)
+
+            display_result_table(result, f"Corp-Ftax - Market combinations for {eid}")
+        else:
+            handle_error_popups(f'{eid} not available or invalid, please check and try again!')
+    else:
+        handle_error_popups('You need to pass in a EID value for this to work!')
+
+
+def display_result_table(result1, heading1, result2=None, heading2=None):
+    result_popup = CTkToplevel(root)
+    result_popup.title("Query result")
+    result_popup.geometry("{}+{}".format(x_cordinate-350, y_cordinate-150))
+    
+    if result1:
+        result_popup.grab_set()
+        rows = len(result1)
+        try:
+            columns = len(result1[0])
+        except IndexError:
+            columns = 1
+        frame1 = CTkFrame(result_popup)
+        frame1.grid(row=0, column=0, padx=20, pady=20, columnspan=4)
+        
+        label = CTkLabel(frame1, text=heading1)
+        label.grid(row=0, columnspan=6, padx=10, pady=10)
+        
+        button_row_start = len(result1)
+        
+        for i in range(rows):
+            for j in range(columns):
+                e = CTkEntry(frame1, width=180, corner_radius=0, justify=CENTER)
+                try:
+                    e.grid(row=i+1, column=j, padx=10, pady=10)
+                    e.insert(END, result1[i][j])
+                    e.configure(state="disabled")
+                except IndexError:
+                    e.grid_forget()
+                    break
+    
+    if result2:
+        rows = len(result2)
+        try:
+            columns = len(result2[0])
+        except IndexError:
+            columns = 1
+        frame2 = CTkFrame(result_popup)
+        frame2.grid(row=1, column=0, padx=20, pady=20, columnspan=6)
+        
+        label = CTkLabel(frame2, text=heading2)
+        label.grid(row=0, columnspan=6, padx=10, pady=10)
+        button_row_start = len(result2) + len(result1) + 1
+        
+        for i in range(rows):
+            for j in range(columns):
+                e = CTkEntry(frame2, width=180, corner_radius=0, justify=CENTER)
+                try:
+                    e.grid(row=i+1, column=j, padx=10, pady=10)
+                    e.insert(END, result2[i][j])
+                    e.configure(state="disabled")
+                except IndexError:
+                    e.grid_forget()
+                    break
+        
+            
+    button = CTkButton(result_popup, text="Close", fg_color="red", hover_color="#d9453b", padx=10, pady=10, command=lambda: result_popup.destroy())
+    button.grid(row=button_row_start, columnspan=6)
+    result_popup.wm_transient(root)
+
+
+def get_radio_value() -> None:
+    
+    """
+     Switches the window based on the radio button selected.
+    """
+    
+    val = radio_selection.get()
+    if val == 1:
+        frame3.grid(row=1, column=0, padx=10, pady=10, columnspan=2, sticky=N+S+W+E)
+        frame4.grid_forget()
+    else:
+        frame4.grid(row=1, column=0, padx=10, pady=10, columnspan=2, sticky=E+W)
+        frame3.grid_forget()
+        
+
+def change_theme() -> None:
+    
+    """
+        Switches between light and dark themes.
+    """
+    
+    global default_theme
+    if default_theme == 0:
+        default_theme = 1
+        light_dark_button.configure(image=dark_img)
+        set_appearance_mode("light")
+    else:
+        default_theme = 0
+        light_dark_button.configure(image=light_img)
+        set_appearance_mode("dark")
+
+
+
+# Frame 1 (Button to upload and display uploaded Master Matrix)
+frame1 = CTkFrame(root)
+frame1.pack(padx=10, pady=10, fill="both")
+
+# Frame 1 widgets and variable
+upload_matrix_button = CTkButton(frame1, text="Select the latest Master Matrix", command=get_master_matrix)
+
+upload_matrix_button.pack(pady=(20, 5))
+
+upload_master_indicator = CTkLabel(frame1, text="No file uploaded", text_color="red")
+upload_master_indicator.pack(pady=(5, 10))
+
+# Frame 2 (Radio buttons to select the search criteria, either with EID or Offer ID)
+frame2 = CTkFrame(root)
+
+# Frame 2 widgets
+radio_selection = IntVar()
+
+search_with_eid = CTkRadioButton(frame2, text="Search with EID", variable=radio_selection, value=1, command=get_radio_value)
+search_with_eid.grid(row=0, column=0, padx=(10, 0), pady=10)
+
+search_with_oid = CTkRadioButton(frame2, text="Search with Offer ID", variable=radio_selection, value=2, command=get_radio_value)
+search_with_oid.grid(row=0, column=1, padx=(0, 10), pady=10)
+radio_selection.set(1)
+
+# Frame 3 (Input box and submit button for EID search criteria)
+frame3 = CTkFrame(frame2)
+frame3.grid(row=1, column=0, padx=10, pady=10, columnspan=2, sticky=N+S+E+W)
+
+frame2.grid_columnconfigure(0, weight=1)
+frame2.grid_rowconfigure(0, weight=1)
+
+# Frame 3 widgets
+eid_var = StringVar()
+
+eid_label = CTkLabel(frame3, text="Enter EID")
+eid_label.pack(padx=10, pady=(10, 1))
+
+eid_input = CTkEntry(frame3, width=200, textvariable=eid_var)
+eid_input.pack(padx=10, pady=(1, 5))
+
+eid_var.trace('w', lambda *args: eid_var.set(eid_var.get().upper()))
+
+eid_submit = CTkButton(frame3, text="Submit", width=75, command=lambda:from_eid(eid_var.get()))
+eid_submit.pack(padx=10, pady=(5, 10))
+
+# Frame 4 (Button to upload EID sheet and display uploaded sheet)
+frame4 = CTkFrame(frame2)
+
+frame2.grid_columnconfigure(0, weight=1)
+frame2.grid_rowconfigure(0, weight=1)
+
+# Frame 4 widgets
+eid_dataframe = None
+upload_eid_sheet = CTkButton(frame4, text="Select the latest EID Sheet", command=get_eid_sheet)
+upload_eid_sheet.pack(padx=10, pady=(20, 1))
+
+upload_eid_indicator = CTkLabel(frame4, text="No file uploaded", text_color="red")
+upload_eid_indicator.pack(padx=10, pady=(1, 5))
+
+# Frame 5 (Input, Dropdown and Submit button to search with Offer ID)
+frame5 = CTkFrame(frame4)
+
+# Frame 5 widgets
+oid_label = CTkLabel(frame5, text="Enter Offer ID")
+oid_label.grid(row=0, column=0, padx=(20, 10), pady=(5, 5))
+
+oid_var = StringVar()
+
+oid_input = CTkEntry(frame5, textvariable=oid_var)
+oid_input.grid(row=1, column=0, padx=(20, 10), pady=(5, 5))
+
+env_label = CTkLabel(frame5, text="Select Env.")
+env_label.grid(row=0, column=1, padx=10, pady=(5, 5))
+
+env_var = StringVar()
+env_drop = CTkOptionMenu(frame5, values=["QA INT", "QA 1", "QA 2", "QA 3", "Others"], variable=env_var)
+env_drop.grid(row=1, column=1, padx=10, pady=(5, 5))
+
+oid_submit = CTkButton(frame5, text="Submit", width=75, command=lambda: get_corp_ftax(env_var.get(), oid_var.get()))
+oid_submit.grid(row=2, column=0, columnspan=2, padx=(20, 10), pady=(5, 10), sticky=E+W)
+
+# Frame 6 (Footer section with Tool version and theme change mechanism)
+frame6 = CTkFrame(root, height=50)
+frame6.pack(side=BOTTOM, padx=10, pady=(0, 10), fill=X)
+
+# Frame 6 widgets
+version_label = CTkLabel(frame6, text="EID Tool v1.0", width=20)
+version_label.pack(side=LEFT, padx=5, pady=5)
+
+light_dark_button = CTkButton(frame6, image=light_img, relief="flat", text="", width=16, height=16, fg_color="white", command=change_theme)
+light_dark_button.pack(side=RIGHT, padx=(0, 20), pady=5)
+
+theme_label = CTkLabel(frame6, text="Change theme", width=25)
+theme_label.pack(side=RIGHT, padx=5, pady=5)
+
+
+root.mainloop(0)
