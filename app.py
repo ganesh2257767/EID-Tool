@@ -1,5 +1,3 @@
-import abc
-import xyz
 from customtkinter import *
 from tkinter import filedialog
 import pandas as pd
@@ -11,11 +9,16 @@ default_theme = 0
 set_appearance_mode("dark")
 set_default_color_theme("dark-blue")
 
+icon_image_path = ".\\assets\\main_icon.ico"
+light_mode_image_path = ".\\assets\\light_mode.png"
+dark_mode_image_path = ".\\assets\\dark_mode.png"
+
 root = CTk()
 root.resizable(False, False)
 root.title("EID Tool v1.2")
+root.iconbitmap(icon_image_path)
 
-dark_img = CTkImage(light_image=Image.open(".\\assets\\dark_mode.png"), dark_image=Image.open(".\\assets\\light_mode.png"), size=(10, 10))
+theme_image = CTkImage(light_image=Image.open(dark_mode_image_path), dark_image=Image.open(light_mode_image_path), size=(10, 10))
 
 window_height = 500
 popup_height = 100
@@ -40,6 +43,7 @@ def handle_error_popups(err_message: str) -> None:
     """
     popup = CTkToplevel(root)
     popup.title("Error")
+    popup.iconbitmap(icon_image_path)
     popup.geometry("{}x{}+{}+{}".format(popup_width, popup_height, x_cordinate-50, y_cordinate+100))
     popup.geometry("500x150")
     popup.grab_set()
@@ -155,7 +159,7 @@ def get_corp_ftax_from_offer_id(env: str, offer_id: str) -> None:
     if corpftax_legacy_list or corpftax_altice_list:
         result_altice = format_for_table(corpftax_altice_list)
         result_legacy = format_for_table(corpftax_legacy_list)
-        display_result_table(result_altice, f"Altice Combinations for Offer {offer_id}", result_legacy, f"Legacy Combinations for Offer {offer_id}")
+        display_result_table(result_altice, f"Altice Combinations for Offer {offer_id}", offer_id, result_legacy, f"Legacy Combinations for Offer {offer_id}")
 
     elif smb_list:
         result_smb = format_for_table(smb_list)
@@ -220,12 +224,12 @@ def from_eid(eid: str) -> None:
     if corp_ftax:
         result = format_for_table(corp_ftax)
 
-        display_result_table(result, f"Corp-Ftax - Market combinations for {eid}")
+        display_result_table(result, f"Corp-Ftax - Market combinations for {eid}", eid)
     else:
         handle_error_popups(f'{eid} not available or invalid, please check and try again!')
 
 
-def display_result_table(result1: List, heading1: str, result2: List=None, heading2: str=None):
+def display_result_table(result1: List, heading1: str, title:str, result2: List=None, heading2: str=None) -> None:
     """
     display_result_table - Creates a niceley styled result table.
 
@@ -241,7 +245,8 @@ def display_result_table(result1: List, heading1: str, result2: List=None, headi
     :type heading2: str, optional
     """    
     result_popup = CTkToplevel(root)
-    result_popup.title("Query result")
+    result_popup.title(f"Result for {title}")
+    result_popup.iconbitmap(icon_image_path)
     result_popup.geometry("{}+{}".format(x_cordinate-350, y_cordinate-150))
 
     if result1:
@@ -413,7 +418,7 @@ oid_var.trace('w', lambda *args: oid_var.set(oid_var.get().strip()))
 env_label = CTkLabel(frame5, text="Select Env.")
 env_label.grid(row=0, column=1, padx=10, pady=(5, 5))
 
-env_var = StringVar()
+env_var = StringVar(value="QA INT")
 env_drop = CTkOptionMenu(frame5, values=["QA INT", "QA 1", "QA 2", "QA 3", "Others"], variable=env_var)
 env_drop.grid(row=1, column=1, padx=10, pady=(5, 5))
 
@@ -431,7 +436,7 @@ frame6.pack(side=BOTTOM, padx=10, pady=(0, 10), fill=X)
 version_label = CTkLabel(frame6, text="EID Tool v1.2", width=20)
 version_label.pack(side=LEFT, padx=5, pady=5)
 
-light_dark_button = CTkButton(frame6, image=dark_img, text="", width=16, height=16, fg_color="white", command=change_theme)
+light_dark_button = CTkButton(frame6, image=theme_image, text="", width=16, height=16, fg_color="white", command=change_theme)
 light_dark_button.pack(side=RIGHT, padx=(0, 20), pady=5)
 
 theme_label = CTkLabel(frame6, text="Change theme", width=25)
