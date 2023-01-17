@@ -2,6 +2,7 @@ from customtkinter import *
 from tkinter import filedialog
 import pandas as pd
 from PIL import Image
+from typing import List
 
 default_theme = 0
 
@@ -11,7 +12,6 @@ set_default_color_theme("dark-blue")
 root = CTk()
 root.resizable(False, False)
 root.title("EID Tool v1.1")
-
 
 dark_img = CTkImage(light_image=Image.open(".\\assets\\dark_mode.png"), dark_image=Image.open(".\\assets\\light_mode.png"), size=(10, 10))
 
@@ -52,8 +52,18 @@ def handle_error_popups(err_message: str) -> None:
     popup.wm_transient(root)
 
 
+def format_for_table(lst: List) -> List:
+    """
+    format_for_table - Takes in a list and returns a list of list for displaying
 
-def format_for_table(lst):
+    Takes in a list of values and converts it into a list of lists with 6 elements each (except the last one in some ocassions).
+    Helps in displaying it on the result frame cleanly.
+
+    :param lst:  - A list of values from the dataframe.
+    :type lst: List
+    :return: temp - Formatted list of lists with 6 elements in each sub-list.
+    :rtype: List
+    """
     temp = []
 
     for i in range(0, len(lst), 6):
@@ -64,9 +74,10 @@ def format_for_table(lst):
 
 master_matrix_dataframe = None
 def get_master_matrix() -> None:
-    
     """
-        Uploads the Master Matrix file supplied and creates a Pandas DataFrame, also throws exceptions if the file format is not excel (.xlsx)
+    get_master_matrix - Uploads the Master Matrix file supplied and creates a Pandas DataFrame.
+
+    Uploads the Master Matrix file supplied and creates a Pandas DataFrame, also throws exceptions if the file format is not excel (.xlsx)
     """
     global upload_master_indicator, frame2, master_matrix_dataframe
 
@@ -93,7 +104,17 @@ def get_master_matrix() -> None:
         frame2.pack(padx=10, pady=10, fill="both")
 
 
-def get_corp_ftax(env, offer_id):
+def get_corp_ftax_from_offer_id(env: str, offer_id: str) -> None:
+    """
+    get_corp_ftax_from_offer_id - Displays the corp and ftax combination depending on the environment and offer ID passed. 
+
+    Takes environment and offer ID and displays the corp and ftax combinations as well as Market type supported in that corp-ftax combination.
+
+    :param env: Environment for which the combinations are requested. Values passed from th GUI to avoid incorrect values.
+    :type env: str
+    :param offer_id: Offer ID to check the corp-ftax combination.
+    :type offer_id: str
+    """
     if all((env, offer_id)):
         
         match env:
@@ -113,7 +134,6 @@ def get_corp_ftax(env, offer_id):
         smb_list = []
         
         offer_eid = {eid_dataframe['ELIGIBILITY_ID'][i] for i in eid_dataframe.index if eid_dataframe['OFFER_ID'][i] == offer_id}
-        print(offer_eid)
         for j in master_matrix_dataframe.index:
             if master_matrix_dataframe['Corp'][j] in corp:
                 if master_matrix_dataframe['Altice One'][j] == 'Y' and master_matrix_dataframe['RESI EID'][j] in offer_eid:
@@ -146,23 +166,24 @@ def get_corp_ftax(env, offer_id):
 
 eid_dataframe = None
 def get_eid_sheet() -> None:
-    
     """
-        Uploads the EID file supplied and creates a Pandas DataFrame, also throws exceptions if the file format is not excel (.xlsx)
+    get_eid_sheet - Uploads the EID file supplied and creates a Pandas DataFrame.
+
+    Uploads the EID file supplied and creates a Pandas DataFrame, also throws exceptions if the file format is not excel (.xlsx)
     """
-    
+       
     global upload_eid_indicator, frame2, eid_dataframe
 
     eid_path = filedialog.askopenfilename()
     try:
         eid_dataframe = pd.read_excel(eid_path, usecols=['ELIGIBILITY_ID', 'OFFER_ID'], converters={'ELIGIBILITY_ID': str, 'OFFER_ID': str})
     except ImportError as e:
-        frame5.grid_forget()
+        frame5.pack_forget()
         handle_error_popups(e)
     except FileNotFoundError:
         pass
     except ValueError as e:
-        frame5.grid_forget()
+        frame5.pack_forget()
         upload_eid_indicator.configure(text=f"No file uploaded", text_color="red")
         if "Excel file format cannot be determined, you must specify an engine manually" in e.args[0]:
             handle_error_popups("Please upload an excel file only!")
@@ -175,7 +196,15 @@ def get_eid_sheet() -> None:
         oid_input.focus_set()
 
 
-def from_eid(eid, event=None):
+def from_eid(eid: str) -> None:
+    """
+    from_eid - Displays Corp and Ftax combination for provided EID value.
+
+    Displays the Corp and Ftax combination for a provided EID.
+
+    :param eid: EID to check the Corp-Ftax combination.
+    :type eid: str
+    """    
     if eid:
         corp_ftax = []
         for i in master_matrix_dataframe.index:
@@ -193,7 +222,21 @@ def from_eid(eid, event=None):
         handle_error_popups('You need to pass in a EID value for this to work!')
 
 
-def display_result_table(result1, heading1, result2=None, heading2=None):
+def display_result_table(result1: List, heading1: str, result2: List=None, heading2: str=None):
+    """
+    display_result_table - Creates a niceley styled result table.
+
+    Takes in the result and heading and creates a nicely styled and padded display table from a combination of Text and Frame widgets.
+
+    :param result1: [Required] - List of list of the result values to be displayed.
+    :type result1: List
+    :param heading1: [Required] - Heading for the result1 data set.
+    :type heading1: str
+    :param result2: [Optional] - To be passed in case the Offer ID has Altice and Legacy combinations, defaults to None
+    :type result2: List, optional
+    :param heading2: [Optional] - To be passed in case the Offer ID has Altice and Legacy combinations, defaults to None
+    :type heading2: str, optional
+    """    
     result_popup = CTkToplevel(root)
     result_popup.title("Query result")
     result_popup.geometry("{}+{}".format(x_cordinate-350, y_cordinate-150))
@@ -282,11 +325,9 @@ def change_theme() -> None:
     global default_theme
     if default_theme == 0:
         default_theme = 1
-        # light_dark_button.configure(image=dark_img)
         set_appearance_mode("light")
     else:
         default_theme = 0
-        # light_dark_button.configure(image=light_img)
         set_appearance_mode("dark")
 
 
@@ -376,11 +417,11 @@ env_var = StringVar()
 env_drop = CTkOptionMenu(frame5, values=["QA INT", "QA 1", "QA 2", "QA 3", "Others"], variable=env_var)
 env_drop.grid(row=1, column=1, padx=10, pady=(5, 5))
 
-oid_submit = CTkButton(frame5, text="Submit", width=75, command=lambda: get_corp_ftax(env_var.get(), oid_var.get()))
+oid_submit = CTkButton(frame5, text="Submit", width=75, command=lambda: get_corp_ftax_from_offer_id(env_var.get(), oid_var.get()))
 oid_submit.grid(row=2, column=0, columnspan=2, padx=(20, 10), pady=(5, 10), sticky=E+W)
 
-oid_input.bind('<Return>', lambda x: get_corp_ftax(env_var.get(), oid_var.get()))
-oid_input.bind('<Key-space>', lambda x: get_corp_ftax(env_var.get(), oid_var.get()))
+oid_input.bind('<Return>', lambda x: get_corp_ftax_from_offer_id(env_var.get(), oid_var.get()))
+oid_input.bind('<Key-space>', lambda x: get_corp_ftax_from_offer_id(env_var.get(), oid_var.get()))
 
 # Frame 6 (Footer section with Tool version and theme change mechanism)
 frame6 = CTkFrame(root, height=50)
