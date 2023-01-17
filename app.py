@@ -11,7 +11,7 @@ set_default_color_theme("dark-blue")
 
 root = CTk()
 root.resizable(False, False)
-root.title("EID Tool v1.1")
+root.title("EID Tool v1.2")
 
 dark_img = CTkImage(light_image=Image.open(".\\assets\\dark_mode.png"), dark_image=Image.open(".\\assets\\light_mode.png"), size=(10, 10))
 
@@ -115,52 +115,53 @@ def get_corp_ftax_from_offer_id(env: str, offer_id: str) -> None:
     :param offer_id: Offer ID to check the corp-ftax combination.
     :type offer_id: str
     """
-    if all((env, offer_id)):
-        
-        match env:
-            case "QA INT":
-                corp = ['7702', '7704', '7710', '7715']
-            case "QA 1":
-                corp = ['7708', '7711']
-            case "QA 2":
-                corp = ['7712', '7709']
-            case "QA 3":
-                corp = ['7707', '7714']
-            case _:
-                corp = ['7701', '7703', '7705', '7706', '7713']
-    
-        corpftax_altice_list = []
-        corpftax_legacy_list = []
-        smb_list = []
-        
-        offer_eid = {eid_dataframe['ELIGIBILITY_ID'][i] for i in eid_dataframe.index if eid_dataframe['OFFER_ID'][i] == offer_id}
-        for j in master_matrix_dataframe.index:
-            if master_matrix_dataframe['Corp'][j] in corp:
-                if master_matrix_dataframe['Altice One'][j] == 'Y' and master_matrix_dataframe['RESI EID'][j] in offer_eid:
-                    corpftax_altice_list.append(
-                        f"{master_matrix_dataframe['CONCATENATE'][j][:4]}-{master_matrix_dataframe['CONCATENATE'][j][4:]} - {master_matrix_dataframe['Market'][j].strip()} - {master_matrix_dataframe['RESI EID'][j].strip()}")
-
-                elif master_matrix_dataframe['Altice One'][j] == 'N' and master_matrix_dataframe['RESI EID'][j] in offer_eid:
-                    corpftax_legacy_list.append(
-                        f"{master_matrix_dataframe['CONCATENATE'][j][:4]}-{master_matrix_dataframe['CONCATENATE'][j][4:]} - {master_matrix_dataframe['Market'][j].strip()} - {master_matrix_dataframe['RESI EID'][j].strip()}")
-
-                elif master_matrix_dataframe['RESI EID'][j] in offer_eid:
-                    smb_list.append(f"{master_matrix_dataframe['CONCATENATE'][j][:4]}-{master_matrix_dataframe['CONCATENATE'][j][4:]} - {master_matrix_dataframe['Market'][j].strip()} - {master_matrix_dataframe['RESI EID'][j].strip()}")
-
-
-        if corpftax_legacy_list or corpftax_altice_list:
-            result_altice = format_for_table(corpftax_altice_list)
-            result_legacy = format_for_table(corpftax_legacy_list)
-            display_result_table(result_altice, f"Altice Combinations for Offer {offer_id}", result_legacy, f"Legacy Combinations for Offer {offer_id}")
-           
-        elif smb_list:
-            result_smb = format_for_table(smb_list)
-            display_result_table(result_smb, 'SMB Combinations')
-
-        else:
-            handle_error_popups(f'Offer {offer_id} not available in {corp} or is invalid!\n\nPlease check Offer ID or change corp and try again!')
-    else:
+    if not all((env, offer_id)):
         handle_error_popups("Won't work if there's missing values!")
+        return
+        
+    match env:
+        case "QA INT":
+            corp = ['7702', '7704', '7710', '7715']
+        case "QA 1":
+            corp = ['7708', '7711']
+        case "QA 2":
+            corp = ['7712', '7709']
+        case "QA 3":
+            corp = ['7707', '7714']
+        case _:
+            corp = ['7701', '7703', '7705', '7706', '7713']
+
+    corpftax_altice_list = []
+    corpftax_legacy_list = []
+    smb_list = []
+    
+    offer_eid = {eid_dataframe['ELIGIBILITY_ID'][i] for i in eid_dataframe.index if eid_dataframe['OFFER_ID'][i] == offer_id}
+    for j in master_matrix_dataframe.index:
+        if master_matrix_dataframe['Corp'][j] in corp:
+            if master_matrix_dataframe['Altice One'][j] == 'Y' and master_matrix_dataframe['RESI EID'][j] in offer_eid:
+                corpftax_altice_list.append(
+                    f"{master_matrix_dataframe['CONCATENATE'][j][:4]}-{master_matrix_dataframe['CONCATENATE'][j][4:]} - {master_matrix_dataframe['Market'][j].strip()} - {master_matrix_dataframe['RESI EID'][j].strip()}")
+
+            elif master_matrix_dataframe['Altice One'][j] == 'N' and master_matrix_dataframe['RESI EID'][j] in offer_eid:
+                corpftax_legacy_list.append(
+                    f"{master_matrix_dataframe['CONCATENATE'][j][:4]}-{master_matrix_dataframe['CONCATENATE'][j][4:]} - {master_matrix_dataframe['Market'][j].strip()} - {master_matrix_dataframe['RESI EID'][j].strip()}")
+
+            elif master_matrix_dataframe['RESI EID'][j] in offer_eid:
+                smb_list.append(f"{master_matrix_dataframe['CONCATENATE'][j][:4]}-{master_matrix_dataframe['CONCATENATE'][j][4:]} - {master_matrix_dataframe['Market'][j].strip()} - {master_matrix_dataframe['RESI EID'][j].strip()}")
+
+
+    if corpftax_legacy_list or corpftax_altice_list:
+        result_altice = format_for_table(corpftax_altice_list)
+        result_legacy = format_for_table(corpftax_legacy_list)
+        display_result_table(result_altice, f"Altice Combinations for Offer {offer_id}", result_legacy, f"Legacy Combinations for Offer {offer_id}")
+        
+    elif smb_list:
+        result_smb = format_for_table(smb_list)
+        display_result_table(result_smb, 'SMB Combinations')
+
+    else:
+        handle_error_popups(f'Offer {offer_id} not available in {corp} or is invalid!\n\nPlease check Offer ID or change corp and try again!')
+        
 
 
 
@@ -205,21 +206,23 @@ def from_eid(eid: str) -> None:
     :param eid: EID to check the Corp-Ftax combination.
     :type eid: str
     """    
-    if eid:
-        corp_ftax = []
-        for i in master_matrix_dataframe.index:
-            if master_matrix_dataframe['RESI EID'][i] == eid:
-                a = f"""{master_matrix_dataframe['CONCATENATE'][i][:4]}-{master_matrix_dataframe['CONCATENATE'][i][4:]} - {master_matrix_dataframe['Market'][i].strip()}"""
-                corp_ftax.append(a)
-
-        if corp_ftax:
-            result = format_for_table(corp_ftax)
-
-            display_result_table(result, f"Corp-Ftax - Market combinations for {eid}")
-        else:
-            handle_error_popups(f'{eid} not available or invalid, please check and try again!')
-    else:
+    if not eid:
         handle_error_popups('You need to pass in a EID value for this to work!')
+        return
+    
+    corp_ftax = []
+    for i in master_matrix_dataframe.index:
+        if master_matrix_dataframe['RESI EID'][i] == eid:
+            a = f"""{master_matrix_dataframe['CONCATENATE'][i][:4]}-{master_matrix_dataframe['CONCATENATE'][i][4:]} - {master_matrix_dataframe['Market'][i].strip()}"""
+            corp_ftax.append(a)
+
+    if corp_ftax:
+        result = format_for_table(corp_ftax)
+
+        display_result_table(result, f"Corp-Ftax - Market combinations for {eid}")
+    else:
+        handle_error_popups(f'{eid} not available or invalid, please check and try again!')
+        
 
 
 def display_result_table(result1: List, heading1: str, result2: List=None, heading2: str=None):
@@ -428,7 +431,7 @@ frame6 = CTkFrame(root, height=50)
 frame6.pack(side=BOTTOM, padx=10, pady=(0, 10), fill=X)
 
 # Frame 6 widgets
-version_label = CTkLabel(frame6, text="EID Tool v1.1", width=20)
+version_label = CTkLabel(frame6, text="EID Tool v1.2", width=20)
 version_label.pack(side=LEFT, padx=5, pady=5)
 
 light_dark_button = CTkButton(frame6, image=dark_img, text="", width=16, height=16, fg_color="white", command=change_theme)
