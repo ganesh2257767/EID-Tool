@@ -5,7 +5,6 @@ from PIL import Image
 from typing import List
 import requests
 import threading
-import time
 
 default_theme = 0
 
@@ -16,7 +15,7 @@ icon_image_path = ".\\assets\\main_icon.ico"
 light_mode_image_path = ".\\assets\\light_mode.png"
 dark_mode_image_path = ".\\assets\\dark_mode.png"
 
-version = "1.3"
+version = 1.3
 
 root = CTk()
 root.resizable(False, False)
@@ -40,15 +39,17 @@ root.geometry("{}x{}+{}+{}".format(window_width, window_height, x_cordinate, y_c
 
 
 def check_for_updates():
-    time.sleep(10)
     global update_label
     url = "https://raw.githubusercontent.com/ganesh2257767/EID-Tool/main/update_changelogs.txt"
     response = requests.get(url)
-    latest_version = response.text.split("\n")[0].split("v")[-1]
-    if version < latest_version:
-        update_label.configure(text=f"New version v{latest_version} available.", text_color="red")
+    if response.status_code == 200:
+        latest_version = float(response.text.split("\n")[0].split("v")[-1])
+        if version < latest_version:
+            update_label.configure(text=f"New version v{latest_version} available.", text_color="red")
+        elif version == latest_version:
+            update_label.configure(text=f"All good, currently on the latest version v{latest_version}.", text_color="green")
     else:
-        update_label.configure(text=f"All good, currently on the latest version v{latest_version}.", text_color="green")
+        update_label.configure(text=f"Unable to check latest version details at this time.", text_color="red")
 
 
 def handle_error_popups(err_message: str) -> None:
