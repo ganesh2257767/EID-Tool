@@ -39,10 +39,17 @@ root.geometry("{}x{}+{}+{}".format(window_width, window_height, x_cordinate, y_c
 
 
 def check_for_updates():
-    url = "https://api.github.com/repos/ganesh2257767/EID-Tool/git/trees/5acb5a63ee06f29c7230c1452aa8a4cf843f4f41"
-    response = requests.get(url).json()
-    for x in response["tree"]:
-        print(x["path"])
+    global update_label
+    url = "https://raw.githubusercontent.com/ganesh2257767/EID-Tool/new_changes/update_changelogs.txt"
+    response = requests.get(url)
+    latest_version = response.text.split("\n")[0].split("v")[-1]
+    print(latest_version)
+    if version < latest_version:
+        update_label.configure(text=f"New version v{latest_version} available.")
+    else:
+        update_label.configure(text=f"Latest version.")
+        
+    
     
 
 
@@ -455,8 +462,9 @@ theme_label = CTkLabel(frame6, text="Change theme", width=25)
 theme_label.pack(side=RIGHT, padx=5, pady=5)
 
 # Update section on root
-update_label = CTkLabel(root)
+update_label = CTkLabel(root, text="")
+update_label.pack(side=BOTTOM)
 
 if __name__ == "__main__":
-    # check_for_updates()
+    check_for_updates()
     root.mainloop(0)
