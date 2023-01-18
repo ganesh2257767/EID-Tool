@@ -3,6 +3,8 @@ from tkinter import filedialog
 import pandas as pd
 from PIL import Image
 from typing import List
+import requests
+import json
 
 default_theme = 0
 
@@ -13,9 +15,11 @@ icon_image_path = ".\\assets\\main_icon.ico"
 light_mode_image_path = ".\\assets\\light_mode.png"
 dark_mode_image_path = ".\\assets\\dark_mode.png"
 
+version = "1.2"
+
 root = CTk()
 root.resizable(False, False)
-root.title("EID Tool v1.2")
+root.title(f"EID Tool v{version}")
 root.iconbitmap(icon_image_path)
 
 theme_image = CTkImage(light_image=Image.open(dark_mode_image_path), dark_image=Image.open(light_mode_image_path), size=(10, 10))
@@ -32,6 +36,14 @@ x_cordinate = int((screen_width/2) - (window_width/2))
 y_cordinate = int((screen_height/2) - (window_height/2))
 
 root.geometry("{}x{}+{}+{}".format(window_width, window_height, x_cordinate, y_cordinate))
+
+
+def check_for_updates():
+    url = "https://api.github.com/repos/ganesh2257767/EID-Tool/git/trees/5acb5a63ee06f29c7230c1452aa8a4cf843f4f41"
+    response = requests.get(url).json()
+    for x in response["tree"]:
+        print(x["path"])
+    
 
 
 def handle_error_popups(err_message: str) -> None:
@@ -433,7 +445,7 @@ frame6 = CTkFrame(root, height=50)
 frame6.pack(side=BOTTOM, padx=10, pady=(0, 10), fill=X)
 
 # Frame 6 widgets
-version_label = CTkLabel(frame6, text="EID Tool v1.2", width=20)
+version_label = CTkLabel(frame6, text=f"EID Tool v{version}", width=20)
 version_label.pack(side=LEFT, padx=5, pady=5)
 
 light_dark_button = CTkButton(frame6, image=theme_image, text="", width=16, height=16, fg_color="white", command=change_theme)
@@ -442,5 +454,9 @@ light_dark_button.pack(side=RIGHT, padx=(0, 20), pady=5)
 theme_label = CTkLabel(frame6, text="Change theme", width=25)
 theme_label.pack(side=RIGHT, padx=5, pady=5)
 
+# Update section on root
+update_label = CTkLabel(root)
 
-root.mainloop(0)
+if __name__ == "__main__":
+    # check_for_updates()
+    root.mainloop(0)
