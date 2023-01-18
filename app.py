@@ -3,6 +3,8 @@ from tkinter import filedialog
 import pandas as pd
 from PIL import Image
 from typing import List
+import requests
+import threading
 
 default_theme = 0
 
@@ -13,9 +15,11 @@ icon_image_path = ".\\assets\\main_icon.ico"
 light_mode_image_path = ".\\assets\\light_mode.png"
 dark_mode_image_path = ".\\assets\\dark_mode.png"
 
+version = 1.3
+
 root = CTk()
 root.resizable(False, False)
-root.title("EID Tool v1.2")
+root.title(f"EID Tool v{version}")
 root.iconbitmap(icon_image_path)
 
 theme_image = CTkImage(light_image=Image.open(dark_mode_image_path), dark_image=Image.open(light_mode_image_path), size=(10, 10))
@@ -32,6 +36,20 @@ x_cordinate = int((screen_width/2) - (window_width/2))
 y_cordinate = int((screen_height/2) - (window_height/2))
 
 root.geometry("{}x{}+{}+{}".format(window_width, window_height, x_cordinate, y_cordinate))
+
+
+def check_for_updates():
+    global update_label
+    url = "https://raw.githubusercontent.com/ganesh2257767/EID-Tool/main/update_changelogs.txt"
+    response = requests.get(url)
+    if response.status_code == 200:
+        latest_version = float(response.text.split("\n")[0].split("v")[-1])
+        if version < latest_version:
+            update_label.configure(text=f"New version v{latest_version} available.", text_color="red")
+        elif version == latest_version:
+            update_label.configure(text=f"All good, currently on the latest version v{latest_version}.", text_color="green")
+    else:
+        update_label.configure(text=f"Unable to check latest version details at this time.", text_color="red")
 
 
 def handle_error_popups(err_message: str) -> None:
@@ -433,7 +451,7 @@ frame6 = CTkFrame(root, height=50)
 frame6.pack(side=BOTTOM, padx=10, pady=(0, 10), fill=X)
 
 # Frame 6 widgets
-version_label = CTkLabel(frame6, text="EID Tool v1.2", width=20)
+version_label = CTkLabel(frame6, text=f"EID Tool v{version}", width=20)
 version_label.pack(side=LEFT, padx=5, pady=5)
 
 light_dark_button = CTkButton(frame6, image=theme_image, text="", width=16, height=16, fg_color="white", command=change_theme)
@@ -442,5 +460,10 @@ light_dark_button.pack(side=RIGHT, padx=(0, 20), pady=5)
 theme_label = CTkLabel(frame6, text="Change theme", width=25)
 theme_label.pack(side=RIGHT, padx=5, pady=5)
 
+# Update section on root
+update_label = CTkLabel(root, text="Checking for updates in the background...")
+update_label.pack(side=BOTTOM)
 
-root.mainloop(0)
+if __name__ == "__main__":
+    threading.Thread(target=check_for_updates).start()
+    root.mainloop(0)
