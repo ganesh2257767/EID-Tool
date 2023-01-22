@@ -1,4 +1,4 @@
-Latest version: v1.4
+Latest version: v1.3
 
 Changes:
 Added a version tracker, tracks the version from git repository.
