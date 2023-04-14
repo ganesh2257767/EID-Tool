@@ -1,4 +1,7 @@
-Latest version: v1.3
+Latest version: v1.4
 
-Changes:
+Changes 1.3:
 Added a version tracker, tracks the version from git repository.
+
+Changes 1.4:
+Made the result display labels scale with text size. (Especially for Market A and B with long names [All Digital 400])

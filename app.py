@@ -15,7 +15,7 @@ icon_image_path = ".\\assets\\main_icon.ico"
 light_mode_image_path = ".\\assets\\light_mode.png"
 dark_mode_image_path = ".\\assets\\dark_mode.png"
 
-version = 1.3
+version = 1.4
 
 root = CTk()
 root.resizable(False, False)
@@ -46,10 +46,13 @@ def check_for_updates():
         latest_version = float(response.text.split("\n")[0].split("v")[-1])
         if version < latest_version:
             update_label.configure(text=f"New version v{latest_version} available.", text_color="red")
-        elif version == latest_version:
+            return
+        if version >= latest_version:
             update_label.configure(text=f"All good, currently on the latest version v{latest_version}.", text_color="green")
+            return
     else:
         update_label.configure(text=f"Unable to check latest version details at this time.", text_color="red")
+        return
 
 
 def handle_error_popups(err_message: str) -> None:
@@ -284,7 +287,10 @@ def display_result_table(result1: List, heading1: str, title:str, result2: List=
 
         for i in range(rows):
             for j in range(columns):
-                e = CTkEntry(result_frame1, width=180, corner_radius=0, justify=CENTER)
+                try:
+                    e = CTkEntry(result_frame1, width=len(result1[i][j])*9, corner_radius=0, justify=CENTER)
+                except IndexError:
+                    continue
                 try:
                     e.grid(row=i+1, column=j, padx=10, pady=10)
                     e.insert(END, result1[i][j])
@@ -308,9 +314,12 @@ def display_result_table(result1: List, heading1: str, title:str, result2: List=
 
         for i in range(rows):
             for j in range(columns):
-                e = CTkEntry(result_frame2, width=180, corner_radius=0, justify=CENTER)
                 try:
-                    e.grid(row=i+1, column=j, padx=10, pady=10)
+                    e = CTkEntry(result_frame2, width=len(result2[i][j])*9, corner_radius=0, justify=CENTER)
+                except IndexError:
+                    continue
+                try:
+                    e.grid(row=i+1, column=j, padx=10, pady=9)
                     e.insert(END, result2[i][j])
                     e.configure(state="disabled")
                 except IndexError:
