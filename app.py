@@ -37,6 +37,19 @@ y_cordinate = int((screen_height/2) - (window_height/2))
 
 root.geometry("{}x{}+{}+{}".format(window_width, window_height, x_cordinate, y_cordinate))
 
+market_mapping = (
+    ("500 Meg", "[C, E]"),
+    ("All Digital 500Meg", "[C, E]"),
+    ("All Digital 400Meg", "[A, B]"),
+    ("LIMITED", "[J, Q]"),
+    ("GIG - FIBER", "[G,  F]"),
+    ("PREGIG", "[K, O]"),
+    ("GIG FIBER DATA ONLY", "[G, F]"),
+    ("VIDEO ONLY", "[V]"),
+    ("GIG", "[M, N]"),
+    ("Gig", "[M, N]"),
+    )
+
 
 def check_for_updates():
     global update_label
@@ -112,6 +125,8 @@ def get_master_matrix() -> None:
     read_cols = ['Corp', 'CONCATENATE', 'RESI EID', 'Market', 'Altice One']
     try:
         master_matrix_dataframe = pd.read_excel(master_matrix_path, usecols=read_cols, converters={'Corp':str, 'CONCATENATE': str})
+        for market in market_mapping:
+            master_matrix_dataframe = master_matrix_dataframe.replace(*market, regex=True)
     except ImportError as e:
         frame2.pack_forget()
         handle_error_popups(e)
@@ -166,15 +181,18 @@ def get_corp_ftax_from_offer_id(env: str, offer_id: str) -> None:
     for j in master_matrix_dataframe.index:
         if master_matrix_dataframe['Corp'][j] in corp:
             if master_matrix_dataframe['Altice One'][j] == 'Y' and master_matrix_dataframe['RESI EID'][j] in offer_eid:
+                f = f"{master_matrix_dataframe['CONCATENATE'][j][4:]:0>2}"
                 corpftax_altice_list.append(
-                    f"{master_matrix_dataframe['CONCATENATE'][j][:4]}-{master_matrix_dataframe['CONCATENATE'][j][4:]} - {master_matrix_dataframe['Market'][j].strip()} - {master_matrix_dataframe['RESI EID'][j].strip()}")
+                    f"{master_matrix_dataframe['CONCATENATE'][j][:4]}-{f} - {master_matrix_dataframe['Market'][j].strip()} - {master_matrix_dataframe['RESI EID'][j].strip()}")
 
             elif master_matrix_dataframe['Altice One'][j] == 'N' and master_matrix_dataframe['RESI EID'][j] in offer_eid:
+                f = f"{master_matrix_dataframe['CONCATENATE'][j][4:]:0>2}"
                 corpftax_legacy_list.append(
-                    f"{master_matrix_dataframe['CONCATENATE'][j][:4]}-{master_matrix_dataframe['CONCATENATE'][j][4:]} - {master_matrix_dataframe['Market'][j].strip()} - {master_matrix_dataframe['RESI EID'][j].strip()}")
+                    f"{master_matrix_dataframe['CONCATENATE'][j][:4]}-{f} - {master_matrix_dataframe['Market'][j].strip()} - {master_matrix_dataframe['RESI EID'][j].strip()}")
 
             elif master_matrix_dataframe['RESI EID'][j] in offer_eid:
-                smb_list.append(f"{master_matrix_dataframe['CONCATENATE'][j][:4]}-{master_matrix_dataframe['CONCATENATE'][j][4:]} - {master_matrix_dataframe['Market'][j].strip()} - {master_matrix_dataframe['RESI EID'][j].strip()}")
+                f = f"{master_matrix_dataframe['CONCATENATE'][j][4:]:0>2}"
+                smb_list.append(f"{master_matrix_dataframe['CONCATENATE'][j][:4]}-{f} - {master_matrix_dataframe['Market'][j].strip()} - {master_matrix_dataframe['RESI EID'][j].strip()}")
 
 
     if corpftax_legacy_list or corpftax_altice_list:
@@ -233,13 +251,14 @@ def from_eid(eid: str) -> None:
     :type eid: str
     """    
     if not eid:
-        handle_error_popups('You need to pass in a EID value for this to work!')
+        handle_error_popups('You need to pass in an EID value for this to work!')
         return
 
     corp_ftax = []
     for i in master_matrix_dataframe.index:
         if master_matrix_dataframe['RESI EID'][i] == eid:
-            a = f"""{master_matrix_dataframe['CONCATENATE'][i][:4]}-{master_matrix_dataframe['CONCATENATE'][i][4:]} - {master_matrix_dataframe['Market'][i].strip()}"""
+            f = f"{master_matrix_dataframe['CONCATENATE'][i][4:]:0>2}"
+            a = f"""{master_matrix_dataframe['CONCATENATE'][i][:4]}-{f} - {master_matrix_dataframe['Market'][i].strip()}"""
             corp_ftax.append(a)
 
     if corp_ftax:
@@ -268,8 +287,11 @@ def display_result_table(result1: List, heading1: str, title:str, result2: List=
     result_popup = CTkToplevel(root)
     result_popup.title(f"Result for {title}")
     result_popup.iconbitmap(icon_image_path)
+    # result_popup.geometry("{}+{}".format(x_cordinate-350, y_cordinate-150))
     result_popup.geometry("{}+{}".format(x_cordinate-350, y_cordinate-150))
 
+    min_width = 350
+    
     if result1:
         result_popup.grab_set()
         rows = len(result1)
@@ -277,13 +299,15 @@ def display_result_table(result1: List, heading1: str, title:str, result2: List=
             columns = len(result1[0])
         except IndexError:
             columns = 1
-        result_frame1 = CTkScrollableFrame(result_popup, width=1300, height=300, corner_radius=0, fg_color="transparent")
-        result_frame1.grid(row=0, column=0, padx=20, pady=20, columnspan=6, sticky="nsew")
+        result_frame1 = CTkScrollableFrame(result_popup, height=100, corner_radius=0, fg_color="transparent")
+        result_frame1.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
         
         label = CTkLabel(result_frame1, text=heading1, font=('Segoe UI', 18, 'bold'))
         label.grid(row=0, columnspan=6, padx=10, pady=10)
         
         button_row_start = len(result1)
+        
+        total_width = 0
 
         for i in range(rows):
             for j in range(columns):
@@ -298,6 +322,10 @@ def display_result_table(result1: List, heading1: str, title:str, result2: List=
                 except IndexError:
                     e.grid_forget()
                     break
+                if i == 0:
+                    total_width += len(result1[i][j])*9 + 30
+
+        result_frame1.configure(width=max(total_width, min_width))
 
     if result2:
         rows = len(result2)
@@ -305,13 +333,15 @@ def display_result_table(result1: List, heading1: str, title:str, result2: List=
             columns = len(result2[0])
         except IndexError:
             columns = 1
-        result_frame2 = CTkScrollableFrame(result_popup, width=1300, height=300, corner_radius=0, fg_color="transparent")
-        result_frame2.grid(row=1, column=0, padx=20, pady=20, columnspan=6, sticky="nsew")
+        result_frame2 = CTkScrollableFrame(result_popup, height=100, corner_radius=0, fg_color="transparent")
+        result_frame2.grid(row=1, column=0, padx=20, pady=20, sticky="nsew")
 
         label = CTkLabel(result_frame2, text=heading2, font=('Segoe UI', 18, 'bold'))
         label.grid(row=0, columnspan=6, padx=10, pady=10)
         button_row_start = len(result2) + len(result1) + 1
-
+        
+        total_width = 0
+        
         for i in range(rows):
             for j in range(columns):
                 try:
@@ -325,7 +355,10 @@ def display_result_table(result1: List, heading1: str, title:str, result2: List=
                 except IndexError:
                     e.grid_forget()
                     break
+                if i == 0:
+                    total_width += len(result2[i][j])*9 + 30
 
+        result_frame2.configure(width=max(total_width, min_width))
 
     button = CTkButton(result_popup, text="Close", fg_color="red", hover_color="#d9453b", command=lambda: result_popup.destroy())
     button.grid(row=button_row_start, columnspan=6, padx=10, pady=10)
