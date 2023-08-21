@@ -269,10 +269,6 @@ def display_result_table(result1: List, heading1: str, title:str, result2: List=
     result_popup.title(f"Result for {title}")
     result_popup.iconbitmap(icon_image_path)
     result_popup.geometry("{}+{}".format(x_cordinate-350, y_cordinate-150))
-    
-    # result_canvas = CTkCanvas(result_popup, borderwidth=0, background="#ffffff")
-    # vsb = CTkSScrollbar(self, orient="vertical", command=result_canvas.yview)
-    
 
     if result1:
         result_popup.grab_set()
