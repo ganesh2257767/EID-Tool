@@ -15,7 +15,7 @@ icon_image_path = ".\\assets\\main_icon.ico"
 light_mode_image_path = ".\\assets\\light_mode.png"
 dark_mode_image_path = ".\\assets\\dark_mode.png"
 
-version = 1.4
+version = 1.5
 
 root = CTk()
 root.resizable(False, False)
@@ -269,6 +269,10 @@ def display_result_table(result1: List, heading1: str, title:str, result2: List=
     result_popup.title(f"Result for {title}")
     result_popup.iconbitmap(icon_image_path)
     result_popup.geometry("{}+{}".format(x_cordinate-350, y_cordinate-150))
+    
+    # result_canvas = CTkCanvas(result_popup, borderwidth=0, background="#ffffff")
+    # vsb = CTkSScrollbar(self, orient="vertical", command=result_canvas.yview)
+    
 
     if result1:
         result_popup.grab_set()
@@ -277,8 +281,8 @@ def display_result_table(result1: List, heading1: str, title:str, result2: List=
             columns = len(result1[0])
         except IndexError:
             columns = 1
-        result_frame1 = CTkFrame(result_popup)
-        result_frame1.grid(row=0, column=0, padx=20, pady=20, columnspan=4)
+        result_frame1 = CTkScrollableFrame(result_popup, width=1300, height=300, corner_radius=0, fg_color="transparent")
+        result_frame1.grid(row=0, column=0, padx=20, pady=20, columnspan=6, sticky="nsew")
         
         label = CTkLabel(result_frame1, text=heading1, font=('Segoe UI', 18, 'bold'))
         label.grid(row=0, columnspan=6, padx=10, pady=10)
@@ -305,8 +309,8 @@ def display_result_table(result1: List, heading1: str, title:str, result2: List=
             columns = len(result2[0])
         except IndexError:
             columns = 1
-        result_frame2 = CTkFrame(result_popup)
-        result_frame2.grid(row=1, column=0, padx=20, pady=20, columnspan=6)
+        result_frame2 = CTkScrollableFrame(result_popup, width=1300, height=300, corner_radius=0, fg_color="transparent")
+        result_frame2.grid(row=1, column=0, padx=20, pady=20, columnspan=6, sticky="nsew")
 
         label = CTkLabel(result_frame2, text=heading2, font=('Segoe UI', 18, 'bold'))
         label.grid(row=0, columnspan=6, padx=10, pady=10)
