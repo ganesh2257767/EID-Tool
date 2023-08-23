@@ -287,8 +287,7 @@ def display_result_table(result1: List, heading1: str, title:str, result2: List=
     result_popup = CTkToplevel(root)
     result_popup.title(f"Result for {title}")
     result_popup.iconbitmap(icon_image_path)
-    # result_popup.geometry("{}+{}".format(x_cordinate-350, y_cordinate-150))
-    result_popup.geometry("{}+{}".format(x_cordinate-350, y_cordinate-150))
+    result_popup.geometry("{}+{}".format(x_cordinate-600, y_cordinate-150))
 
     min_width = 350
     
