@@ -15,7 +15,7 @@ icon_image_path = ".\\assets\\main_icon.ico"
 light_mode_image_path = ".\\assets\\light_mode.png"
 dark_mode_image_path = ".\\assets\\dark_mode.png"
 
-version = 1.5
+version = 1.6
 
 root = CTk()
 root.resizable(False, False)
@@ -288,11 +288,12 @@ def display_result_table(result1: List, heading1: str, title:str, result2: List=
     result_popup.title(f"Result for {title}")
     result_popup.iconbitmap(icon_image_path)
     result_popup.geometry("{}+{}".format(x_cordinate-600, y_cordinate-150))
+    result_popup.wm_transient(root)
+    result_popup.grab_set()
 
     min_width = 350
     
     if result1:
-        result_popup.grab_set()
         rows = len(result1)
         try:
             columns = len(result1[0])
@@ -337,6 +338,7 @@ def display_result_table(result1: List, heading1: str, title:str, result2: List=
 
         label = CTkLabel(result_frame2, text=heading2, font=('Segoe UI', 18, 'bold'))
         label.grid(row=0, columnspan=6, padx=10, pady=10)
+        
         button_row_start = len(result2) + len(result1) + 1
         
         total_width = 0
@@ -364,7 +366,7 @@ def display_result_table(result1: List, heading1: str, title:str, result2: List=
     result_popup.bind('<Return>', lambda x: result_popup.destroy())
     result_popup.bind('<Escape>', lambda x: result_popup.destroy())
     result_popup.bind('<Key-space>', lambda x: result_popup.destroy())
-    result_popup.wm_transient(root)
+    # result_popup.wm_transient(root)
 
 
 def get_radio_value() -> None:
